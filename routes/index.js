@@ -1,10 +1,12 @@
+/* eslint-disable array-callback-return */
 /* eslint-disable camelcase */
 /* eslint-disable no-underscore-dangle */
 const express = require('express');
 const md5 = require('blueimp-md5');
-const { UserModel } = require('../model/modules');
+const { UserModel, ChatModel } = require('../model/modules');
 
 const router = express.Router();
+const filter = { password: 0, __v: 0 }; // 指定过滤的属性
 
 // 注册
 router.post('/register', (req, res) => {
@@ -98,4 +100,35 @@ router.get('/userList', (req, res) => {
   });
 });
 
+/* 聊天接口 */
+/* 获取当前用户所有相关聊天信息列表
+*/
+router.get('/msglist', (req, res) => {
+  const { user_id } = req.cookies;
+
+  UserModel.find((err, userDocs) => {
+    const users = {}; // 对象容器
+    userDocs.forEach((doc) => {
+      users[doc._id] = { username: doc.username, header: doc.header };
+    });
+
+    ChatModel.find({ $or: [{ from: user_id }, { to: user_id }] }, filter, (error, chatMsgs) => {
+      res.send({ code: 0, data: { users, chatMsgs } });
+    });
+  });
+});
+/*
+修改指定消息为已读
+*/
+router.post('/readmsg', (req, res) => {
+  const { from } = req.body;
+  const to = req.cookies.user_id;
+
+  ChatModel.update({ from, to, read: false }, { read: true }, { multi: true }, (
+    err,
+    doc,
+  ) => {
+    res.send({ code: 0, data: doc.nModified }); // 更新的数量
+  });
+});
 module.exports = router;
