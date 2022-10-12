@@ -14,7 +14,7 @@ module.exports = function (server) {
 
       // 处理数据
       ChatModel.create({
-        from, to, content, chat_id, createDate,
+        from, to, content, chat_id, create_time: createDate,
       }, (error, chatMsg) => {
         // socket.emit() 向当前客户端发
         // 向所有人法
